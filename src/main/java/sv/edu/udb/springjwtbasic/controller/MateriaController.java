@@ -2,6 +2,7 @@ package sv.edu.udb.springjwtbasic.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import sv.edu.udb.springjwtbasic.dto.MateriaDto;
 import sv.edu.udb.springjwtbasic.model.Materia;
@@ -17,7 +18,9 @@ public class MateriaController {
     @Autowired
     private MateriaRepository materiaRepository;
 
+    // CREAR materia
     @PostMapping
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<MateriaDto> createMateria(@RequestBody MateriaDto materiaDto) {
         Materia materia = new Materia();
         materia.setNombre(materiaDto.getNombre());
@@ -31,7 +34,9 @@ public class MateriaController {
         return ResponseEntity.ok(responseDto);
     }
 
+    // LISTAR todas las materias
     @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<List<MateriaDto>> getAllMaterias() {
         List<Materia> materias = materiaRepository.findAll();
         List<MateriaDto> dtos = materias.stream().map(m -> {
@@ -42,5 +47,34 @@ public class MateriaController {
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
+    }
+
+    // ACTUALIZAR materia por ID
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public ResponseEntity<MateriaDto> updateMateria(@PathVariable Integer id, @RequestBody MateriaDto materiaDto) {
+        Materia materia = materiaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Materia no encontrada"));
+
+        materia.setNombre(materiaDto.getNombre());
+        Materia updated = materiaRepository.save(materia);
+
+        MateriaDto dto = new MateriaDto();
+        dto.setId(updated.getId());
+        dto.setNombre(updated.getNombre());
+
+        return ResponseEntity.ok(dto);
+    }
+
+    // ELIMINAR materia por ID
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public ResponseEntity<Void> deleteMateria(@PathVariable Integer id) {
+        if (!materiaRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        materiaRepository.deleteById(id);
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
 }
